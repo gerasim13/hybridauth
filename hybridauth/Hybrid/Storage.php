@@ -10,8 +10,20 @@
  */
 class Hybrid_Storage 
 {
+	private static $sessionSaveHandler = NULL;
+
+	public static function setSaveHandler($handler)
+	{
+		self::$sessionSaveHandler = $handler;
+	}
+
 	function __construct()
-	{ 
+	{
+		if (!is_null(self::$sessionSaveHandler))
+		{
+			session_set_save_handler(self::$sessionSaveHandler, true);
+		}
+
 		if ( ! session_id() ){
 			if( ! session_start() ){
 				throw new Exception( "Hybridauth requires the use of 'session_start()' at the start of your script, which appears to be disabled.", 1 );
