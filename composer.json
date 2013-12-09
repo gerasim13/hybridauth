@@ -20,9 +20,19 @@
         "php": ">=5.2.0",
         "ext-curl": "*"
     },
+    "require-dev": {
+        "paypal/sdk-core-php": "*"
+    },
     "autoload": {
         "psr-0": {
             "Hybrid": "hybridauth/"
         } 
-    }
+    },
+    "repositories":
+    [
+        {
+            "type": "vcs",
+            "url": "https://github.com/paypal/sdk-core-php"
+        }
+    ]
 }
