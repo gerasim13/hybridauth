@@ -134,8 +134,8 @@ class Hybrid_Provider_Adapter
 		Hybrid_Auth::storage()->set( "hauth_session.{$this->id}.hauth_endpoint"     , $this->params["login_done"] ); 
 		Hybrid_Auth::storage()->set( "hauth_session.{$this->id}.id_provider_params" , $this->params );
 
-		// store config to be used by the end point 
-		Hybrid_Auth::storage()->config( "CONFIG", Hybrid_Auth::$config );
+		// store config to be used by the end point
+		Hybrid_Auth::storage()->config("CONFIG", Hybrid_Auth::$config);
 
 		// move on
 		Hybrid_Logger::debug( "Hybrid_Provider_Adapter::login( {$this->id} ), redirect the user to login_start URL." );

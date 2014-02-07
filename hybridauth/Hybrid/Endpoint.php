@@ -196,10 +196,11 @@ class Hybrid_Endpoint {
 			try {
 				require_once realpath( dirname( __FILE__ ) )  . "/Storage.php";
 				
-				$storage = new Hybrid_Storage(); 
+				$storage = new Hybrid_Storage();
 
 				// Check if Hybrid_Auth session already exist
-				if ( ! $storage->config( "CONFIG" ) ) { 
+				if (!$storage->config("CONFIG"))
+				{ 
 					header( "HTTP/1.0 404 Not Found" );
 					die( "You cannot access this page directly." );
 				}
