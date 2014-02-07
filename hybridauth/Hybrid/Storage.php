@@ -10,12 +10,21 @@
  */
 class Hybrid_Storage 
 {
+	// ------------------------------------------------------------------------------
+
 	private static $sessionSaveHandler = NULL;
 
 	public static function setSaveHandler($handler)
 	{
 		self::$sessionSaveHandler = $handler;
 	}
+
+	public static function saveHandler()
+	{
+		return self::$sessionSaveHandler;
+	}
+
+	// ------------------------------------------------------------------------------
 
 	function __construct()
 	{
@@ -24,36 +33,87 @@ class Hybrid_Storage
 			session_set_save_handler(self::$sessionSaveHandler, true);
 		}
 
-		if ( ! session_id() ){
-			if( ! session_start() ){
-				throw new Exception( "Hybridauth requires the use of 'session_start()' at the start of your script, which appears to be disabled.", 1 );
+		if (!session_id())
+		{
+			if(!session_start())
+			{
+				throw new Exception("Hybridauth requires the use of 'session_start()' at the start of your script, which appears to be disabled.", 1);
 			}
 		}
-
-		$this->config( "php_session_id", session_id() );
-		$this->config( "version", Hybrid_Auth::$version );
+		// Read data from session
+		$this->_config = $this->read_config();
+		$this->_store  = $this->read_store();
+		// Add session id and lib version in config
+		$this->config("php_session_id", session_id());
+		$this->config("version", Hybrid_Auth::$version);
 	}
 
-	public function config($key, $value=null) 
+	function __destruct()
 	{
-		$key = strtolower( $key );  
+		$this->write_config();
+		$this->write_store();
+		unset($this->_config);
+		unset($this->_store);
+		self::$sessionSaveHandler = NULL;
+	}
 
-		if( $value ){
-			$_SESSION["HA::CONFIG"][$key] = serialize( $value ); 
+	// ------------------------------------------------------------------------------
+
+	private $_config = NULL;
+	private $_store  = NULL;
+
+	private function write_config()
+	{
+		//self::$sessionSaveHandler->HA_CONFIG = $this->_config;
+		$_SESSION["HA::CONFIG"] = $this->_config;
+		//error_log('session data: ' . serialize($_SESSION));
+	}
+
+	private function read_config()
+	{
+		//return isset(self::$sessionSaveHandler->HA_CONFIG) ? self::$sessionSaveHandler->HA_CONFIG : array();
+		return isset($_SESSION["HA::CONFIG"]) ? $_SESSION["HA::CONFIG"] : array();
+	}
+
+	private function write_store()
+	{
+		//self::$sessionSaveHandler->HA_STORE = $this->_store;
+		$_SESSION["HA::STORE"] = $this->_store;
+		//error_log('session data: ' . serialize($_SESSION));
+	}
+
+	private function read_store()
+	{
+		//return isset(self::$sessionSaveHandler->HA_STORE) ? self::$sessionSaveHandler->HA_STORE : array();
+		return isset($_SESSION["HA::STORE"]) ? $_SESSION["HA::STORE"] : array();
+	}
+
+	// ------------------------------------------------------------------------------
+
+	public function config($key, $value = null) 
+	{
+		$key = strtolower($key);
+
+		if (!is_null($value))
+		{
+			$this->_config[$key] = $value;
+			$this->write_config();
 		}
-		elseif( isset( $_SESSION["HA::CONFIG"][$key] ) ){ 
-			return unserialize( $_SESSION["HA::CONFIG"][$key] );  
+		elseif (isset($this->_config[$key]))
+		{
+			return $this->_config[$key];
 		}
 
-		return NULL; 
+		return NULL;
 	}
 
 	public function get($key) 
 	{
-		$key = strtolower( $key );  
+		$key = strtolower($key);
 
-		if( isset( $_SESSION["HA::STORE"], $_SESSION["HA::STORE"][$key] ) ){ 
-			return unserialize( $_SESSION["HA::STORE"][$key] );  
+		if (isset($this->_store[$key]))
+		{
+			return $this->_store[$key];
 		}
 
 		return NULL; 
@@ -61,54 +121,58 @@ class Hybrid_Storage
 
 	public function set( $key, $value )
 	{
-		$key = strtolower( $key ); 
+		$key = strtolower($key);
 
-		$_SESSION["HA::STORE"][$key] = serialize( $value ); 
+		$this->_store[$key] = $value;
+		$this->write_store();
 	}
 
-	function clear()
-	{ 
-		$_SESSION["HA::STORE"] = ARRAY(); 
+	public function clear()
+	{
+		$this->_store = array();
+		$this->write_store();
 	} 
 
-	function delete($key)
+	public function delete($key)
 	{
-		$key = strtolower( $key );  
+		$key = strtolower($key);
 
-		if( isset( $_SESSION["HA::STORE"], $_SESSION["HA::STORE"][$key] ) ){
-		    $f = $_SESSION['HA::STORE'];
-		    unset($f[$key]);
-		    $_SESSION["HA::STORE"] = $f;
-		} 
+		if (isset($this->_store[$key]))
+		{
+			unset($this->_store[$key]);
+			$this->write_store();
+		}
 	}
 
-	function deleteMatch($key)
+	public function deleteMatch($key)
 	{
-		$key = strtolower( $key ); 
+		$key = strtolower($key);
 
-		if( isset( $_SESSION["HA::STORE"] ) && count( $_SESSION["HA::STORE"] ) ) {
-		    $f = $_SESSION['HA::STORE'];
-		    foreach( $f as $k => $v ){ 
-				if( strstr( $k, $key ) ){
-					unset( $f[ $k ] ); 
+		if (count($this->_store))
+		{
+			foreach($this->_store as $k => $v )
+			{
+				if(strstr($k, $key))
+				{
+					unset($this->_store[$k]); 
 				}
 			}
-			$_SESSION["HA::STORE"] = $f;
-			
+			$this->write_store();
 		}
 	}
 
-	function getSessionData()
+	public function getSessionData()
 	{
-		if( isset( $_SESSION["HA::STORE"] ) ){ 
-			return serialize( $_SESSION["HA::STORE"] ); 
+		if (isset($this->_store))
+		{
+			return $this->_store;
 		}
-
 		return NULL; 
 	}
 
-	function restoreSessionData( $sessiondata = NULL )
-	{ 
-		$_SESSION["HA::STORE"] = unserialize( $sessiondata );
+	public function restoreSessionData( $sessiondata = NULL )
+	{
+		$this->_store = unserialize($sessiondata);
+		$this->write_store();
 	} 
 }
